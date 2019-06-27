@@ -485,7 +485,17 @@ func Register{{$svc.GetName}}{{$.RegisterFuncSuffix}}Client(ctx context.Context,
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}(rctx, inboundMarshaler, client, req, pathParams)
+		gmd, ok := metadata_0.FromOutgoingContext(rctx)
+		if !ok {
+			runtime.OtherErrorHandler(w, req, "Invalid metadata.", 1)
+			return
+		}
+		tmd := metadata.Metadata{}
+		for k, v := range gmd {
+			tmd[k] = strings.Join(v, ",")
+		}
+		gctx := metadata.NewContext(rctx, tmd)
+		resp, md, err := request_{{$svc.GetName}}_{{$m.GetName}}_{{$b.Index}}(gctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
